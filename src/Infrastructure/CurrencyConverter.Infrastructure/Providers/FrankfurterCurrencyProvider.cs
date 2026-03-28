@@ -7,6 +7,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using CurrencyConverter.Infrastructure.Mapping;
+using CurrencyConverter.Infrastructure.Constants;
+using Microsoft.Extensions.Options;
+using CurrencyConverter.Infrastructure.Configurations;
 
 namespace CurrencyConverter.Infrastructure.Providers
 {
@@ -15,23 +18,30 @@ namespace CurrencyConverter.Infrastructure.Providers
         private readonly ILogger<FrankfurterCurrencyProvider> _logger;
         private readonly HttpClient _httpClient;
         private readonly IMemoryCache _cache;
+        private readonly TimeSpan _cacheDuration;
 
         private const string CacheKeyPrefix = "frankfurter_";
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
         public FrankfurterCurrencyProvider(
             ILogger<FrankfurterCurrencyProvider> logger,
-            HttpClient httpClient,
-            IMemoryCache cache)
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache,
+            IOptions<CurrencyProviderApiSettings> options)
         {
             _logger = logger;
-            _httpClient = httpClient;
             _cache = cache;
+
+            var apiOptions = options.Value.Frankfurter;
+
+            _cacheDuration = TimeSpan.FromMinutes(apiOptions.CacheTimeMinutes);
+
+            _httpClient = httpClientFactory.CreateClient(CurrencyProviderConstants.CurrencyProviderHttpClient);
+            _httpClient.BaseAddress = new Uri(apiOptions.BaseUrl);
         }
 
         public async Task<IEnumerable<LatestRate>> GetLatestRatesAsync(string baseCurrency, string? quotes = null, CancellationToken cancellationToken = default)
         {
-            var cacheKey = $"{CacheKeyPrefix}latest_{baseCurrency.ToUpperInvariant()}";
+            var cacheKey = $"{CacheKeyPrefix}latest_{baseCurrency.ToUpperInvariant()}_{quotes?.ToUpperInvariant()}";
 
             if (_cache.TryGetValue(cacheKey, out IEnumerable<LatestRate>? cached) && cached is not null)
             {
@@ -61,7 +71,7 @@ namespace CurrencyConverter.Infrastructure.Providers
 
             var result = data.ToLatestRates();
 
-            _cache.Set(cacheKey, result, CacheDuration);
+            _cache.Set(cacheKey, result, _cacheDuration);
             return result;
         }
     }
