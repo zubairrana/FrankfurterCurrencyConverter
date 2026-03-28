@@ -14,7 +14,7 @@ namespace CurrencyConverter.BusinessLogic.Services
         private readonly ICurrencyProviderFactory _currencyProviderFactory = currencyProviderFactory;
 
         public async Task<IEnumerable<LatestRate>> GetLatestRatesAsync(
-            string baseCurrency, string? quotes = null,string? currencyProviderName = null,
+            string baseCurrency, string? quotes = null, string? currencyProviderName = null,
             CancellationToken cancellationToken = default)
         {
             ValidateCurrency(baseCurrency);
@@ -39,6 +39,29 @@ namespace CurrencyConverter.BusinessLogic.Services
         private static IEnumerable<LatestRate> RemoveRestrictedCurrencies(IEnumerable<LatestRate> rates) 
         {
             return rates.Where(x => !CurrencyConstants.RestrictedCurrencies.Contains(x.Quote.ToUpperInvariant()));
+        }
+
+        public async Task<ConversionResult> ConvertAsync(
+            string fromCurrency, string toCurrency, decimal amount, string? currencyProviderName = null,
+            CancellationToken cancellationToken = default)
+        {
+            ValidateCurrency(fromCurrency);
+            ValidateCurrency(toCurrency);
+
+            var latestRates = await GetLatestRatesAsync(fromCurrency, toCurrency, currencyProviderName, cancellationToken);
+            var rate = latestRates.SingleOrDefault();
+
+            return rate is null
+                ? throw new CurrencyNotFoundException(toCurrency)
+                : new ConversionResult
+                {
+                    FromCurrency = fromCurrency.ToUpperInvariant(),
+                    ToCurrency = toCurrency.ToUpperInvariant(),
+                    Amount = amount,
+                    ConvertedAmount = amount * rate.Rate,
+                    Rate = rate.Rate,
+                    Date = rate.Date
+                };
         }
     }
 }

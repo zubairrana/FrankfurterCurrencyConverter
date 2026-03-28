@@ -1,4 +1,3 @@
-
 using Asp.Versioning;
 using CurrencyConverter.API.Configurations;
 using CurrencyConverter.API.Middleware;

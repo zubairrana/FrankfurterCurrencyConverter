@@ -21,6 +21,7 @@ namespace CurrencyConverter.API.Controllers.V1
         [ProducesResponseType(typeof(LatestRate), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> GetLatestRates(
             [FromQuery] string baseCurrency = "USD",
@@ -29,6 +30,29 @@ namespace CurrencyConverter.API.Controllers.V1
             CancellationToken cancellationToken = default)
         {
             var result = await currencyService.GetLatestRatesAsync(baseCurrency, quotes, providerName, cancellationToken);
+
+            return Ok(result);
+        }
+
+
+        /// <summary>
+        /// Converts an amount from one currency to another.
+        /// TRY, PLN, THB, and MXN are not supported.
+        /// </summary>
+        [HttpGet("convert")]
+        [ProducesResponseType(typeof(ConversionResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> Convert(
+            [FromQuery] string fromCurrency,
+            [FromQuery] string toCurrency,
+            [FromQuery] decimal amount = 1,
+            [FromQuery] string? provider = null,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await currencyService.ConvertAsync(fromCurrency, toCurrency, amount, provider, cancellationToken);
 
             return Ok(result);
         }

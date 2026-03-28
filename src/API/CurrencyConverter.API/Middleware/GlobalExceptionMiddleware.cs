@@ -40,7 +40,7 @@ public class GlobalExceptionMiddleware
                 exception.Message),
 
             CurrencyNotFoundException => (
-                HttpStatusCode.NoContent,
+                HttpStatusCode.BadRequest,
                 "Currency Not Found",
                 exception.Message),
 
