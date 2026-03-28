@@ -1,10 +1,10 @@
 
 using Asp.Versioning;
 using CurrencyConverter.API.Configurations;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Infrastructure;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace CurrencyConverter.API
 {
@@ -16,6 +16,11 @@ namespace CurrencyConverter.API
 
             // Add services to the container.
             builder.Services.AddDependencyInjections(builder.Configuration);
+            builder.Services.AddRouting(options =>
+            {
+                options.LowercaseUrls = true;
+                options.LowercaseQueryStrings = true;
+            });
             builder.Services.AddControllers();
             
             // API Versioning
@@ -82,6 +87,8 @@ namespace CurrencyConverter.API
                     c.RoutePrefix = string.Empty; // Swagger at root
                 });
             }
+            
+            app.UseMiddleware<GlobalExceptionMiddleware>();
 
             app.UseHttpsRedirection();
 
