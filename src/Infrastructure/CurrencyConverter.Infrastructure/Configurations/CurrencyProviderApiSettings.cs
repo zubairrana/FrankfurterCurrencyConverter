@@ -1,9 +1,9 @@
 ﻿namespace CurrencyConverter.Infrastructure.Configurations
 {
-    public class CurrencyProviderApiSettings
+    public sealed class CurrencyProviderApiSettings
     {
         public const string SectionName = "CurrencyProviderApis";
 
-        public FrankfurterOptions Frankfurter { get; init; } = new ();
+        public FrankfurterApiSettings Frankfurter { get; init; } = new ();
     }
 }

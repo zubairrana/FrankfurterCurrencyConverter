@@ -2,11 +2,10 @@
 using CurrencyConverter.BusinessLogic.Services;
 using CurrencyConverter.Infrastructure.Configurations;
 using CurrencyConverter.Infrastructure.Constants;
+using CurrencyConverter.Infrastructure.Http;
 using CurrencyConverter.Infrastructure.Providers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
-using Polly;
 
 namespace CurrencyConverter.Infrastructure
 {
@@ -28,34 +27,15 @@ namespace CurrencyConverter.Infrastructure
             services.Configure<CurrencyProviderApiSettings>(
                 configuration.GetSection(CurrencyProviderApiSettings.SectionName));
 
+            services.Configure<HttpResilienceSettings>(
+                configuration.GetSection(HttpResilienceSettings.SectionName));
+
             services.AddHttpClient(CurrencyProviderConstants.CurrencyProviderHttpClient, client =>
             {
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
                 client.DefaultRequestHeaders.Add("User-Agent", "CurrencyConverterAPI");
-            })
-                .AddResilienceHandler("currency-pipeline", pipeline =>
-                {
-                    // Retry policy with exponential backoff
-                    pipeline.AddRetry(new HttpRetryStrategyOptions
-                    {
-                        MaxRetryAttempts = 3,
-                        BackoffType = DelayBackoffType.Exponential,
-                        Delay = TimeSpan.FromSeconds(1),
-                        UseJitter = true
-                    });
-
-                    // Circuit breaker
-                    pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
-                    {
-                        SamplingDuration = TimeSpan.FromSeconds(30),
-                        MinimumThroughput = 5,
-                        FailureRatio = 0.5,
-                        BreakDuration = TimeSpan.FromSeconds(30)
-                    });
-
-                    // Timeout per attempt
-                    pipeline.AddTimeout(TimeSpan.FromSeconds(10));
-                });
+                client.Timeout = TimeSpan.FromMinutes(5); // greater than resilience timeout with retries time margin
+            }).AddConfiguredResilience("currency-pipeline");
 
             return services;
         }
