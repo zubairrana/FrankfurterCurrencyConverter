@@ -1,4 +1,6 @@
 ﻿using CurrencyConverter.BusinessLogic.Interfaces;
+using CurrencyConverter.Domain.Constants;
+using CurrencyConverter.Domain.Exceptions;
 using CurrencyConverter.Domain.Models;
 using Microsoft.Extensions.Logging;
 
@@ -15,16 +17,28 @@ namespace CurrencyConverter.BusinessLogic.Services
             string baseCurrency, string? quotes = null,string? currencyProviderName = null,
             CancellationToken cancellationToken = default)
         {
-            // TODO: Validate baseCurrency
+            ValidateCurrency(baseCurrency);
 
             _logger.LogInformation("Fetching latest rates for currency: {BaseCurrency}", baseCurrency);
 
             var currencyProvider = _currencyProviderFactory.GetProvider(currencyProviderName);
             var result = await currencyProvider.GetLatestRatesAsync(baseCurrency, quotes, cancellationToken);
 
-            // TODO: Add currency filter requirement as asked in the Task.
+            return RemoveRestrictedCurrencies(result);
+        }
 
-            return result;
+        private static void ValidateCurrency(string currency)
+        {
+            if (string.IsNullOrWhiteSpace(currency))
+                throw new ArgumentException("Currency code cannot be empty.");
+
+            if (CurrencyConstants.RestrictedCurrencies.Contains(currency.ToUpperInvariant()))
+                throw new RestrictedCurrencyException(currency.ToUpperInvariant());
+        }
+
+        private static IEnumerable<LatestRate> RemoveRestrictedCurrencies(IEnumerable<LatestRate> rates) 
+        {
+            return rates.Where(x => !CurrencyConstants.RestrictedCurrencies.Contains(x.Quote.ToUpperInvariant()));
         }
     }
 }

@@ -18,7 +18,7 @@ namespace CurrencyConverter.Infrastructure.Http
                     .GetRequiredService<IOptions<HttpResilienceSettings>>()
                     .Value;
 
-                // 🔁 Retry
+                // Retry
                 pipeline.AddRetry(new HttpRetryStrategyOptions
                 {
                     MaxRetryAttempts = settings.RetryCount,
@@ -27,7 +27,7 @@ namespace CurrencyConverter.Infrastructure.Http
                     UseJitter = settings.Jitter
                 });
 
-                // ⚡ Circuit Breaker
+                // Circuit Breaker
                 pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
                 {
                     SamplingDuration = TimeSpan.FromSeconds(settings.CircuitBreakerSamplingSeconds),
@@ -36,7 +36,7 @@ namespace CurrencyConverter.Infrastructure.Http
                     BreakDuration = TimeSpan.FromSeconds(settings.CircuitBreakerBreakSeconds)
                 });
 
-                // ⏱ Timeout
+                // Timeout
                 pipeline.AddTimeout(TimeSpan.FromSeconds(settings.TimeoutSeconds));
             });
         }
