@@ -17,6 +17,8 @@ namespace CurrencyConverter.API
 
             // Serilog
             Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", Serilog.Events.LogEventLevel.Warning)
                 .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
@@ -84,6 +86,7 @@ namespace CurrencyConverter.API
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddApiRateLimiting();
+            builder.Services.AddHttpContextAccessor(); // needed by CorrelationIdDelegatingHandler
 
             var app = builder.Build();
 
@@ -99,6 +102,7 @@ namespace CurrencyConverter.API
             }
             
             app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseMiddleware<CorrelationIdMiddleware>();
             app.UseApiRequestLogging();
 
             app.UseHttpsRedirection();

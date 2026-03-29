@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using CurrencyConverter.Domain.Constants;
+using Serilog;
 
 namespace CurrencyConverter.API.Extensions
 {
@@ -10,7 +11,7 @@ namespace CurrencyConverter.API.Extensions
             {
                 // Customise the message template
                 options.MessageTemplate =
-                    "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms | ClientIP: {ClientIP} | ClientId: {ClientId}";
+                    "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms | ClientIP: {ClientIP} | ClientId: {ClientId} | CorrelationId: {CorrelationId}";
 
                 // Add custom properties to every request log
                 options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
@@ -24,6 +25,10 @@ namespace CurrencyConverter.API.Extensions
                     ?? httpContext.User?.FindFirst("sub")?.Value
                     ?? null;
                     diagnosticContext.Set("ClientId", clientId);
+
+                    // CorrelationId
+                    diagnosticContext.Set("CorrelationId",
+                        httpContext.Items[HttpHeaderConstants.CorrelationId]?.ToString() ?? null);
                 };
             });
 

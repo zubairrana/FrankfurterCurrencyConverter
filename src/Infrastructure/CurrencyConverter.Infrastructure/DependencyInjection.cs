@@ -28,6 +28,9 @@ namespace CurrencyConverter.Infrastructure
             services.Configure<CurrencyProviderApiSettings>(
                 configuration.GetSection(CurrencyProviderApiSettings.SectionName));
 
+            // Register the delegating handler
+            services.AddTransient<CorrelationIdDelegatingHandler>();
+
             services.Configure<HttpResilienceSettings>(
                 configuration.GetSection(HttpResilienceSettings.SectionName));
 
@@ -36,7 +39,9 @@ namespace CurrencyConverter.Infrastructure
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
                 client.DefaultRequestHeaders.Add("User-Agent", "CurrencyConverterAPI");
                 client.Timeout = TimeSpan.FromMinutes(5); // greater than resilience timeout with retries time margin
-            }).AddConfiguredResilience("currency-pipeline");
+            })
+                .AddHttpMessageHandler<CorrelationIdDelegatingHandler>()
+                .AddConfiguredResilience("currency-pipeline");
 
             return services;
         }
