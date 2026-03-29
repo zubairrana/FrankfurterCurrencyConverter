@@ -1,7 +1,10 @@
-﻿using CurrencyConverter.BusinessLogic.Interfaces;
-using CurrencyConverter.Domain.Constants;
+﻿using CurrencyConverter.BusinessLogic.Constants;
+using CurrencyConverter.BusinessLogic.DTOs.Common;
+using CurrencyConverter.BusinessLogic.DTOs.Currency;
+using CurrencyConverter.BusinessLogic.Extensions;
+using CurrencyConverter.BusinessLogic.Interfaces;
 using CurrencyConverter.Domain.Exceptions;
-using CurrencyConverter.Domain.Models;
+using CurrencyConverter.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.BusinessLogic.Services
@@ -13,7 +16,7 @@ namespace CurrencyConverter.BusinessLogic.Services
         private readonly ILogger<ICurrencyService> _logger = logger;
         private readonly ICurrencyProviderFactory _currencyProviderFactory = currencyProviderFactory;
 
-        public async Task<IEnumerable<LatestRate>> GetLatestRatesAsync(
+        public async Task<IEnumerable<CurrencyRate>> GetLatestRatesAsync(
             string baseCurrency, string? quotes = null, string? currencyProviderName = null,
             CancellationToken cancellationToken = default)
         {
@@ -22,8 +25,10 @@ namespace CurrencyConverter.BusinessLogic.Services
             _logger.LogInformation("Fetching latest rates for currency: {BaseCurrency}", baseCurrency);
 
             var currencyProvider = _currencyProviderFactory.GetProvider(currencyProviderName);
-            var result = await currencyProvider.GetLatestRatesAsync(baseCurrency, quotes, cancellationToken);
-
+            var data = await currencyProvider.GetLatestRatesAsync(baseCurrency, quotes, cancellationToken);
+            
+            var result = data.ToCurrencyRates();
+            
             return RemoveRestrictedCurrencies(result);
         }
 
@@ -36,7 +41,7 @@ namespace CurrencyConverter.BusinessLogic.Services
                 throw new RestrictedCurrencyException(currency.ToUpperInvariant());
         }
 
-        private static IEnumerable<LatestRate> RemoveRestrictedCurrencies(IEnumerable<LatestRate> rates) 
+        private static IEnumerable<CurrencyRate> RemoveRestrictedCurrencies(IEnumerable<CurrencyRate> rates) 
         {
             return rates.Where(x => !CurrencyConstants.RestrictedCurrencies.Contains(x.Quote.ToUpperInvariant()));
         }
@@ -62,6 +67,26 @@ namespace CurrencyConverter.BusinessLogic.Services
                     Rate = rate.Rate,
                     Date = rate.Date
                 };
+        }
+
+        public async Task<PagedResponse<CurrencyRate>> GetHistoricalRatesAsync(
+            string baseCurrency, DateTime fromDate, DateTime toDate,
+            int page, int pageSize, string? quotes = null,
+            string? currencyProviderName = null,
+            CancellationToken cancellationToken = default)
+        {
+            ValidateCurrency(baseCurrency);
+
+            _logger.LogInformation("Fetching Historical rates for currency: {BaseCurrency}", baseCurrency);
+
+            var currencyProvider = _currencyProviderFactory.GetProvider(currencyProviderName);
+            var data = await currencyProvider.GetHistoricalRatesAsync(
+                baseCurrency, fromDate, toDate, page, pageSize, quotes, cancellationToken);
+            
+            var result = data.ToCurrencyRates();
+            result = RemoveRestrictedCurrencies(result);
+
+            return result.ToPagedResponse(page, pageSize);
         }
     }
 }

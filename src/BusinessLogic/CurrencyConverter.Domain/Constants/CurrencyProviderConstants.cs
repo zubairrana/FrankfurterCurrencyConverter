@@ -1,4 +1,4 @@
-﻿namespace CurrencyConverter.Infrastructure.Constants
+﻿namespace CurrencyConverter.Domain.Constants
 {
     public static class CurrencyProviderConstants
     {

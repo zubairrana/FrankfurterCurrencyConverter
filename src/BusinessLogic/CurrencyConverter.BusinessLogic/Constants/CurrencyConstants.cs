@@ -1,4 +1,4 @@
-﻿namespace CurrencyConverter.Domain.Constants
+﻿namespace CurrencyConverter.BusinessLogic.Constants
 {
     public static class CurrencyConstants
     {

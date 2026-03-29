@@ -1,4 +1,4 @@
-﻿namespace CurrencyConverter.BusinessLogic.Interfaces
+﻿namespace CurrencyConverter.Domain.Interfaces
 {
     public interface ICurrencyProviderFactory
     {

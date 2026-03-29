@@ -1,6 +1,6 @@
-﻿namespace CurrencyConverter.Infrastructure.ExternalModels.Frankfurter
+﻿namespace CurrencyConverter.Domain.Models.Frankfurter
 {
-    public class FrankfurterLatestRate
+    public class FrankfurterCurrencyRate
     {
         public DateTime Date { get; set; }
         public required string Base { get; set; }

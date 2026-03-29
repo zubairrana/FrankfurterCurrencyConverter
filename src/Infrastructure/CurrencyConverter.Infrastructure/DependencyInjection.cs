@@ -1,7 +1,8 @@
 ﻿using CurrencyConverter.BusinessLogic.Interfaces;
 using CurrencyConverter.BusinessLogic.Services;
+using CurrencyConverter.Domain.Constants;
+using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Configurations;
-using CurrencyConverter.Infrastructure.Constants;
 using CurrencyConverter.Infrastructure.Http;
 using CurrencyConverter.Infrastructure.Providers;
 using Microsoft.Extensions.Configuration;

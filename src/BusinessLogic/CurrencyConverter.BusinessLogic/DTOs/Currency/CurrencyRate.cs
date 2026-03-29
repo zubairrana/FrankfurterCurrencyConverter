@@ -1,6 +1,6 @@
-﻿namespace CurrencyConverter.Domain.Models
+﻿namespace CurrencyConverter.BusinessLogic.DTOs.Currency
 {
-    public class LatestRate
+    public class CurrencyRate
     {
         public DateTime Date { get; set; }
         public required string BaseCurrency { get; set; }

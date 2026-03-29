@@ -1,4 +1,4 @@
-﻿using CurrencyConverter.BusinessLogic.Interfaces;
+﻿using CurrencyConverter.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

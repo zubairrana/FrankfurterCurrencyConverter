@@ -1,15 +1,13 @@
-﻿using CurrencyConverter.BusinessLogic.Interfaces;
-using CurrencyConverter.Domain.Exceptions;
-using CurrencyConverter.Domain.Models;
-using CurrencyConverter.Infrastructure.ExternalModels.Frankfurter;
+﻿using CurrencyConverter.Domain.Exceptions;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
-using CurrencyConverter.Infrastructure.Mapping;
-using CurrencyConverter.Infrastructure.Constants;
 using Microsoft.Extensions.Options;
 using CurrencyConverter.Infrastructure.Configurations;
+using CurrencyConverter.Domain.Models.Frankfurter;
+using CurrencyConverter.Domain.Interfaces;
+using CurrencyConverter.Domain.Constants;
 
 namespace CurrencyConverter.Infrastructure.Providers
 {
@@ -39,11 +37,11 @@ namespace CurrencyConverter.Infrastructure.Providers
             _httpClient.BaseAddress = new Uri(apiOptions.BaseUrl);
         }
 
-        public async Task<IEnumerable<LatestRate>> GetLatestRatesAsync(string baseCurrency, string? quotes = null, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<FrankfurterCurrencyRate>> GetLatestRatesAsync(string baseCurrency, string? quotes = null, CancellationToken cancellationToken = default)
         {
             var cacheKey = $"{CacheKeyPrefix}latest_{baseCurrency.ToUpperInvariant()}_{quotes?.ToUpperInvariant()}";
 
-            if (_cache.TryGetValue(cacheKey, out IEnumerable<LatestRate>? cached) && cached is not null)
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<FrankfurterCurrencyRate>? cached) && cached is not null)
             {
                 _logger.LogDebug("Latest rates from cache: {BaseCurrency}", baseCurrency);
                 return cached;
@@ -66,13 +64,52 @@ namespace CurrencyConverter.Infrastructure.Providers
                 throw new ExternalApiException($"External API returned {response.StatusCode}", response.StatusCode);
             }
 
-            var data = await response.Content.ReadFromJsonAsync<List<FrankfurterLatestRate>>(cancellationToken: cancellationToken)
+            var data = await response.Content.ReadFromJsonAsync<List<FrankfurterCurrencyRate>>(cancellationToken: cancellationToken)
                 ?? throw new ExternalApiException("Failed to deserialize response from Frankfurter API.");
 
-            var result = data.ToLatestRates();
+            _cache.Set(cacheKey, data, _cacheDuration);
+            return data;
+        }
 
-            _cache.Set(cacheKey, result, _cacheDuration);
-            return result;
+        public async Task<IEnumerable<FrankfurterCurrencyRate>> GetHistoricalRatesAsync(
+            string baseCurrency, DateTime fromDate, DateTime toDate,
+            int page, int pageSize, string? quotes = null, 
+            CancellationToken cancellationToken = default)
+        {
+            var fromDateString = fromDate.ToString("yyyy-MM-dd");
+            var toDateString = toDate.ToString("yyyy-MM-dd");
+            var cacheKey = $"{CacheKeyPrefix}historical_{baseCurrency.ToUpperInvariant()}_{fromDateString}_{toDateString}_{quotes}";
+
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<FrankfurterCurrencyRate>? cached) && cached is not null)
+            {
+                _logger.LogDebug("Cached historical rates: {BaseCurrency} {FromDate}-{ToDate}", baseCurrency, fromDateString, toDateString);
+                return cached;
+            }
+
+            var query = new Dictionary<string, string?>
+            {
+                ["base"] = baseCurrency.ToUpperInvariant(),
+                ["from"] = fromDateString,
+                ["to"] = toDateString,
+                ["quotes"] = quotes
+            };
+
+            var url = QueryHelpers.AddQueryString("rates", query);
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Frankfurter API error: {StatusCode} - {Content}", response.StatusCode, content);
+                throw new ExternalApiException($"External API returned {response.StatusCode}", response.StatusCode);
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<List<FrankfurterCurrencyRate>>(cancellationToken: cancellationToken)
+                ?? throw new ExternalApiException("Failed to deserialize response from Frankfurter API.");
+
+            _cache.Set(cacheKey, data, _cacheDuration);
+            return data;
         }
     }
 }

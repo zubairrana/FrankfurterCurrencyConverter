@@ -1,4 +1,4 @@
-﻿namespace CurrencyConverter.Domain.Models
+﻿namespace CurrencyConverter.BusinessLogic.DTOs.Currency
 {
     public class ConversionResult
     {
