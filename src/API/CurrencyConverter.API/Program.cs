@@ -99,7 +99,7 @@ namespace CurrencyConverter.API
             }
             
             app.UseMiddleware<GlobalExceptionMiddleware>();
-            app.UseMiddleware<RequestLoggingMiddleware>();
+            app.UseApiRequestLogging();
 
             app.UseHttpsRedirection();
 
