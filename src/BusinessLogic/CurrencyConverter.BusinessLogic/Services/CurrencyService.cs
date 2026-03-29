@@ -50,6 +50,8 @@ namespace CurrencyConverter.BusinessLogic.Services
             string fromCurrency, string toCurrency, decimal amount, string? currencyProviderName = null,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Fetching currency conversion: From: {FromCurrency}, To: {ToCurrency}", fromCurrency, toCurrency);
+
             ValidateCurrency(fromCurrency);
             ValidateCurrency(toCurrency);
 

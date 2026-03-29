@@ -43,7 +43,7 @@ namespace CurrencyConverter.Infrastructure.Providers
 
             if (_cache.TryGetValue(cacheKey, out IEnumerable<FrankfurterCurrencyRate>? cached) && cached is not null)
             {
-                _logger.LogDebug("Latest rates from cache: {BaseCurrency}", baseCurrency);
+                _logger.LogInformation("Latest rates from cache: {BaseCurrency}", baseCurrency);
                 return cached;
             }
 
@@ -66,6 +66,8 @@ namespace CurrencyConverter.Infrastructure.Providers
 
             var data = await response.Content.ReadFromJsonAsync<List<FrankfurterCurrencyRate>>(cancellationToken: cancellationToken)
                 ?? throw new ExternalApiException("Failed to deserialize response from Frankfurter API.");
+            
+            _logger.LogInformation("Latest rates from API: {BaseCurrency}", baseCurrency);
 
             _cache.Set(cacheKey, data, _cacheDuration);
             return data;
@@ -82,7 +84,7 @@ namespace CurrencyConverter.Infrastructure.Providers
 
             if (_cache.TryGetValue(cacheKey, out IEnumerable<FrankfurterCurrencyRate>? cached) && cached is not null)
             {
-                _logger.LogDebug("Cached historical rates: {BaseCurrency} {FromDate}-{ToDate}", baseCurrency, fromDateString, toDateString);
+                _logger.LogInformation("Cached historical rates: {BaseCurrency} {FromDate}-{ToDate}", baseCurrency, fromDateString, toDateString);
                 return cached;
             }
 
@@ -107,6 +109,8 @@ namespace CurrencyConverter.Infrastructure.Providers
 
             var data = await response.Content.ReadFromJsonAsync<List<FrankfurterCurrencyRate>>(cancellationToken: cancellationToken)
                 ?? throw new ExternalApiException("Failed to deserialize response from Frankfurter API.");
+
+            _logger.LogInformation("Historical rates from API: {BaseCurrency} {FromDate}-{ToDate}", baseCurrency, fromDateString, toDateString);
 
             _cache.Set(cacheKey, data, _cacheDuration);
             return data;

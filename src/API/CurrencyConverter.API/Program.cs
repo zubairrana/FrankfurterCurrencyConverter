@@ -4,8 +4,11 @@ using CurrencyConverter.API.Extensions;
 using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Infrastructure;
 using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Enrichers.Span;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace CurrencyConverter.API
 {
@@ -19,10 +22,26 @@ namespace CurrencyConverter.API
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", Serilog.Events.LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .Enrich.WithSpan()
                 .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
             builder.Host.UseSerilog();
+
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(r => r.AddService("CurrencyConverter.API"))
+                .WithTracing(tracing =>
+                {
+                    tracing
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                        options.Endpoint = new Uri("http://localhost:5341/ingest/otlp/v1/traces");
+                    });
+                });
 
             // Add services to the container.
             builder.Services.AddDependencyInjections(builder.Configuration);
