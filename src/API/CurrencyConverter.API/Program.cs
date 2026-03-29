@@ -5,6 +5,7 @@ using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Infrastructure;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Serilog;
 
 namespace CurrencyConverter.API
 {
@@ -13,6 +14,13 @@ namespace CurrencyConverter.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Serilog
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Seq("http://localhost:5341")
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
 
             // Add services to the container.
             builder.Services.AddDependencyInjections(builder.Configuration);
@@ -91,6 +99,7 @@ namespace CurrencyConverter.API
             }
             
             app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseHttpsRedirection();
 
