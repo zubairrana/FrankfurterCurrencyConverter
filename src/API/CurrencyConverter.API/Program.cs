@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using CurrencyConverter.API.Configurations;
+using CurrencyConverter.API.Extensions;
 using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Infrastructure;
 using Microsoft.Extensions.Options;
@@ -74,6 +75,8 @@ namespace CurrencyConverter.API
 
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddApiRateLimiting();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -93,6 +96,7 @@ namespace CurrencyConverter.API
 
             app.UseAuthorization();
 
+            app.UseRateLimiter();
 
             app.MapControllers();
 

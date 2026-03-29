@@ -1,17 +1,19 @@
 ﻿using Asp.Versioning;
+using CurrencyConverter.API.Constants;
 using CurrencyConverter.BusinessLogic.DTOs.Common;
 using CurrencyConverter.BusinessLogic.DTOs.Currency;
 using CurrencyConverter.BusinessLogic.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CurrencyConverter.API.Controllers.V1
 {
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
+    [EnableRateLimiting(RateLimitPolicies.Global)]
     public class CurrencyController(ICurrencyService currencyService) : ControllerBase
     {
-
         /// <summary>
         /// Retrieves the latest exchange rates for a specified base currency.
         /// </summary>
