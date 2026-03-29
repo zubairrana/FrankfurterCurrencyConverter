@@ -18,12 +18,14 @@ namespace CurrencyConverter.API.Configurations
         {
             foreach (var description in _provider.ApiVersionDescriptions)
             {
-                options.SwaggerDoc(description.GroupName, new OpenApiInfo
-                {
-                    Title = $"My API {description.GroupName.ToUpper()}",
-                    Version = description.ApiVersion.ToString(),
-                    Description = description.IsDeprecated ? "This API version is deprecated" : null
-                });
+                options.SwaggerDoc(
+                    description.GroupName,
+                    new OpenApiInfo
+                    {
+                        Title = "Currency Converter API",
+                        Version = description.ApiVersion.ToString(),
+                        Description = $"API version {description.ApiVersion}"
+                    });
             }
 
             //options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

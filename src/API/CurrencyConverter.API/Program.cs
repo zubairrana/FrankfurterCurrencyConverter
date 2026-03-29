@@ -1,14 +1,13 @@
 using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using CurrencyConverter.API.Configurations;
 using CurrencyConverter.API.Extensions;
 using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Infrastructure;
-using Microsoft.Extensions.Options;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace CurrencyConverter.API
 {
@@ -67,12 +66,6 @@ namespace CurrencyConverter.API
             //// Swagger
             //builder.Services.AddSwaggerGen(c =>
             //{
-            //    c.SwaggerDoc("v1", new OpenApiInfo
-            //    {
-            //        Title = "Currency Converter API",
-            //        Version = "v1",
-            //        Description = "A robust currency conversion API backed by Frankfurter"
-            //    });
             //    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             //    {
             //        Description = "JWT Authorization header. Example: 'Bearer {token}'",
@@ -90,22 +83,12 @@ namespace CurrencyConverter.API
             //    //});
             //});
 
-            //builder.Services.AddSwaggerGen(c =>
-            //{
-            //    c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
-            //    {
-            //        Title = "Currency Converter API",
-            //        Version = "v1",
-            //        Description = "A robust currency conversion API backed by Frankfurter"
-            //    });
-            //});
-
-            builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-
             builder.Services.AddSwaggerGen();
+            builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
             builder.Services.AddApiRateLimiting();
             builder.Services.AddHttpContextAccessor(); // needed by CorrelationIdDelegatingHandler
+            builder.Services.AddHealthChecks();
 
             var app = builder.Build();
 
@@ -113,10 +96,18 @@ namespace CurrencyConverter.API
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI(c =>
+
+                var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+                app.UseSwaggerUI(options =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Currency Converter API v1");
-                    c.RoutePrefix = string.Empty; // Swagger at root
+                    foreach (var description in provider.ApiVersionDescriptions)
+                    {
+                        options.SwaggerEndpoint(
+                            $"/swagger/{description.GroupName}/swagger.json",
+                            description.GroupName.ToUpperInvariant());
+                        options.RoutePrefix = string.Empty;
+                    }
                 });
             }
             
@@ -131,64 +122,9 @@ namespace CurrencyConverter.API
             app.UseRateLimiter();
 
             app.MapControllers();
+            app.MapHealthChecks("/health");
 
             app.Run();
         }
     }
 }
-
-
-/*
- 
- using Asp.Versioning;
-using CurrencyConverter.API.Configurations;
-using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
-
-namespace CurrencyConverter.API
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // API Versioning
-            builder.Services.AddApiVersioning(options =>
-            {
-                options.DefaultApiVersion = new ApiVersion(1, 0);
-                options.AssumeDefaultVersionWhenUnspecified = true;
-                options.ReportApiVersions = true;
-            }).AddApiExplorer(options =>
-            {
-                options.GroupNameFormat = "'v'VVV";
-                options.SubstituteApiVersionInUrl = true;
-            });
-
-            // Controllers & Swagger
-            builder.Services.AddControllers();
-            builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
-        }
-    }
-}
-
- */
