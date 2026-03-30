@@ -15,6 +15,7 @@ namespace CurrencyConverter.Infrastructure
         public static IServiceCollection AddDependencyInjections(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddMemoryCache();
+            services.AddScoped<ITokenService, TokenService>();
 
             // Register provider implementations
             services.AddScoped<FrankfurterCurrencyProvider>();

@@ -3,11 +3,15 @@ using Asp.Versioning.ApiExplorer;
 using CurrencyConverter.API.Configurations;
 using CurrencyConverter.API.Extensions;
 using CurrencyConverter.API.Middleware;
+using CurrencyConverter.BusinessLogic.Common;
 using CurrencyConverter.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
+using System.Text;
 
 namespace CurrencyConverter.API
 {
@@ -44,6 +48,31 @@ namespace CurrencyConverter.API
 
             // Add services to the container.
             builder.Services.AddDependencyInjections(builder.Configuration);
+            
+            // JWT Authentication
+            builder.Services.Configure<JwtSettings>(
+                builder.Configuration.GetSection(JwtSettings.SectionName));
+
+            var jwtSettings = builder.Configuration
+                .GetSection(JwtSettings.SectionName)
+                .Get<JwtSettings>() ?? throw new InvalidOperationException("JWT SecretKey is not configured.");
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+                        ValidateIssuer = true,
+                        ValidIssuer = jwtSettings.Issuer,
+                        ValidateAudience = true,
+                        ValidAudience = jwtSettings.Audience,
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero
+                    };
+                });
+
             builder.Services.AddRouting(options =>
             {
                 options.LowercaseUrls = true;
@@ -63,28 +92,8 @@ namespace CurrencyConverter.API
                 options.SubstituteApiVersionInUrl = true;
             });
 
-            //// Swagger
-            //builder.Services.AddSwaggerGen(c =>
-            //{
-            //    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            //    {
-            //        Description = "JWT Authorization header. Example: 'Bearer {token}'",
-            //        Name = "Authorization",
-            //        In = ParameterLocation.Header,
-            //        Type = SecuritySchemeType.ApiKey,
-            //        Scheme = "Bearer"
-            //    });
-            //    //c.AddSecurityRequirement(new OpenApiSecurityRequirement
-            //    //{
-            //    //    {
-            //    //        new OpenApiSecurityScheme {  Reference = new BaseOpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
-            //    //        Array.Empty<string>()
-            //    //    }
-            //    //});
-            //});
-
             builder.Services.AddSwaggerGen();
-            builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
+            builder.Services.ConfigureOptions<ConfigureSwagger>();
 
             builder.Services.AddApiRateLimiting();
             builder.Services.AddHttpContextAccessor(); // needed by CorrelationIdDelegatingHandler
@@ -101,12 +110,13 @@ namespace CurrencyConverter.API
 
                 app.UseSwaggerUI(options =>
                 {
+                    options.RoutePrefix = string.Empty;
+
                     foreach (var description in provider.ApiVersionDescriptions)
                     {
                         options.SwaggerEndpoint(
                             $"/swagger/{description.GroupName}/swagger.json",
                             description.GroupName.ToUpperInvariant());
-                        options.RoutePrefix = string.Empty;
                     }
                 });
             }
@@ -117,6 +127,7 @@ namespace CurrencyConverter.API
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseRateLimiter();

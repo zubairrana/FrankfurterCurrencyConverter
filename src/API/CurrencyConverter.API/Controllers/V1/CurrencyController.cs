@@ -3,11 +3,13 @@ using CurrencyConverter.API.Constants;
 using CurrencyConverter.BusinessLogic.DTOs.Common;
 using CurrencyConverter.BusinessLogic.DTOs.Currency;
 using CurrencyConverter.BusinessLogic.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace CurrencyConverter.API.Controllers.V1
 {
+    [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -21,6 +23,7 @@ namespace CurrencyConverter.API.Controllers.V1
         /// <param name="quotes">Comma separated quote currencies code (e.g., USD,AED)</param>
         /// <param name="provider">Optional: Currency provider name (default: Frankfurter)</param>
         /// <param name="cancellationToken">Cancellation token</param>
+        [Authorize(Roles = AuthorizationRoles.Admin)]
         [HttpGet("rates/latest")]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -47,6 +50,7 @@ namespace CurrencyConverter.API.Controllers.V1
         /// <param name="amount">Amount</param>
         /// <param name="provider">Optional: Currency provider name (default: Frankfurter)</param>
         /// <param name="cancellationToken">Cancellation token</param>
+        [Authorize(Roles = AuthorizationRoles.User)]
         [HttpGet("convert")]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
